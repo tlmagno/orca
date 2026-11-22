@@ -18,6 +18,7 @@ import type { TerminalWorkerTurnStops } from '../workers/turn-stops/terminal-wor
 import { agentHookServer } from '../../../agent-hooks/server/agent-hook-server'
 import { isOrcaSessionId } from '../../../../shared/agent-session/identity/orca-session-address'
 import { canonicalOrcaSessionId } from '../addressing/session-lineage/canonical-orca-session-id'
+import { redriveWaitingChatMail } from '../mailbox/structured-mail/structured-chat-mail-restart-redrive'
 
 export abstract class LegacyWorkerRuntimeRecovery extends RuntimeWorkspaceSessionFlush {
   protected abstract getResolvedWorktreeMap(): Promise<Map<string, ResolvedWorktree>>
@@ -49,6 +50,8 @@ export abstract class LegacyWorkerRuntimeRecovery extends RuntimeWorkspaceSessio
       }
     )
   }
+
+  abstract redriveStructuredSessionMail(sessionId: string): void
 
   protected abstract readonly terminalWorkerTurnStops: Pick<
     TerminalWorkerTurnStops,
@@ -123,6 +126,19 @@ export abstract class LegacyWorkerRuntimeRecovery extends RuntimeWorkspaceSessio
       })
     } catch (error: unknown) {
       console.warn('[orchestration] reporting workers stopped across a restart failed', error)
+    }
+    await this.redriveWaitingChatMail()
+  }
+
+  private async redriveWaitingChatMail(): Promise<void> {
+    try {
+      await redriveWaitingChatMail(
+        getStructuredAgentSessionHost(),
+        this.getExistingOrchestrationDb(),
+        (sessionId) => this.redriveStructuredSessionMail(sessionId)
+      )
+    } catch (error: unknown) {
+      console.warn('[orchestration] waking chat mail after a restart failed', error)
     }
   }
 

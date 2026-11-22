@@ -26796,7 +26796,6 @@
         "signedOutOnHost": "未在 {{host}} 上连接"
       },
       "copied": "已复制。请发送给你的 Google 管理员。",
-      "checksAgain": "Orca 会自动重新检查。",
       "share": {
         "saved": "已保存。请将文件发送给你的队友。",
         "failed": "无法保存文件。请重试。"
@@ -26813,9 +26812,7 @@
         "remove": "从这台电脑移除",
         "revoke": "移除并在 Google 撤销授权"
       },
-      "account": "Google · {{email}}",
       "reconnect": "重新连接",
-      "addService": "添加服务",
       "thisComputer": "这台电脑",
       "thisServer": "这台服务器",
       "title": "Google",
@@ -26871,14 +26868,7 @@
         "copyForAdmin": "复制给管理员",
         "checkAgain": "重新检查"
       },
-      "headline": {
-        "ended": "Google 访问权限已失效。请重新连接。",
-        "connected": "已连接 Google",
-        "toFix_one": "快完成了：还有 1 个问题需要解决",
-        "toFix_other": "快完成了：还有 {{count}} 个问题需要解决"
-      },
       "adminRequest": "请在管理控制台（安全性 › API 控制 › 管理第三方应用访问权限）中，将此 Google 应用标记为“受信任”：{{clientId}}",
-      "disconnectMenu": "断开连接",
       "shareButton": "分享配置",
       "setUpTime": "约 10 分钟",
       "haveSetupFile": "有团队提供的配置文件？",

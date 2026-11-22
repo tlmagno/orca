@@ -56,16 +56,17 @@ export async function noteBotGroupMemberReply(
       candidate === turn ? { ...candidate, reply: finished?.text ?? null } : candidate
     )
   })
+  if (finished) {
+    groups.store.setLatest(
+      owner.group.id,
+      { authorName: turn.botName, text: finished.text, at: finished.completedAt ?? endedAt },
+      { after, reply }
+    )
+  }
+  // The room learns the turn ended even when its rows are older than its member chat's loaded page.
+  groups.changed()
   if (!finished) {
     return
-  }
-  const kept = groups.store.setLatest(
-    owner.group.id,
-    { authorName: turn.botName, text: finished.text, at: finished.completedAt ?? endedAt },
-    { after, reply }
-  )
-  if (kept) {
-    groups.changed()
   }
   await handOffGroupMentions(groups, message, turn, { full: finished.full, saved: finished.text })
 }

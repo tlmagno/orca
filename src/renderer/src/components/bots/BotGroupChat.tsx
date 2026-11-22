@@ -105,7 +105,7 @@ export function BotGroupChat({
     }
     const bySession = new Map<
       string,
-      Pick<Turn, 'sessionId' | 'agent'> & { operationIds: string[] }
+      Pick<Turn, 'sessionId' | 'agent'> & { operationIds: string[]; endedIds: Set<string> }
     >()
     for (const member of group.members) {
       const bot = bots.find((bot) => bot.id === member.botId && bot.hostId === group.hostId)
@@ -113,17 +113,26 @@ export function BotGroupChat({
         bySession.set(member.sessionId, {
           sessionId: member.sessionId,
           agent: bot.agent,
-          operationIds: []
+          operationIds: [],
+          endedIds: new Set()
         })
       }
     }
     for (const message of messages) {
       for (const turn of message.turns) {
         if (!turn.revoked) {
+          const endedIds = bySession.get(turn.sessionId)?.endedIds ?? new Set<string>()
+          if (turn.ended) {
+            endedIds.add(turn.operationId)
+          }
           bySession.set(turn.sessionId, {
             sessionId: turn.sessionId,
             agent: turn.agent,
-            operationIds: [...(bySession.get(turn.sessionId)?.operationIds ?? []), turn.operationId]
+            operationIds: [
+              ...(bySession.get(turn.sessionId)?.operationIds ?? []),
+              turn.operationId
+            ],
+            endedIds
           })
         }
       }

@@ -145,13 +145,13 @@ export const BotGroupStop = Room.extend({ botId: z.string().min(1).optional() })
 export const BotGroupNewThread = GroupId.extend({})
 export const BotGroupDelete = GroupId
 
-type GroupJournal = {
+export type GroupJournal = {
   items: readonly AgentJournalRenderItem[]
   submissions: AgentJournalSnapshot['submissions']
 }
 
 /** The submission a group operation (its queued or client message id) handed to the session. */
-function submissionOf(snapshot: GroupJournal, operationId: string) {
+export function botGroupOperationSubmission(snapshot: GroupJournal, operationId: string) {
   // A queued card sent again keeps its id; its latest attempt is the one that counts.
   return snapshot.submissions.findLast(
     (submission) =>
@@ -191,7 +191,7 @@ export function indexBotGroupJournal(snapshot: GroupJournal) {
     operationId: string,
     workerDispatchIds: readonly string[] = []
   ): AgentJournalRenderItem[] => {
-    const submission = submissionOf(snapshot, operationId)
+    const submission = botGroupOperationSubmission(snapshot, operationId)
     const keys = [
       agentJournalSubmissionKey(submission?.clientMessageId ?? operationId),
       submission?.providerItemId ?? ''
@@ -219,12 +219,6 @@ export function botGroupTurnOperation(snapshot: GroupJournal, turnItemId: string
           agentJournalSubmissionKey(submission.clientMessageId) === anchor))
   )
   return submission ? (submission.queuedMessageId ?? submission.clientMessageId) : null
-}
-
-/** The session took this operation in, so a turn with no loaded rows is older than the window,
- *  not still queued or refused. */
-export function botGroupOperationAdmitted(snapshot: GroupJournal, operationId: string): boolean {
-  return submissionOf(snapshot, operationId)?.dispatchState === 'accepted'
 }
 
 export function createBotGroupJournalIndexer() {

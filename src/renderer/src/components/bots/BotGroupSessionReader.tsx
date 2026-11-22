@@ -2,11 +2,11 @@ import { memo, useEffect, useMemo } from 'react'
 import type { RuntimeClientTarget } from '../../../../shared/remote-runtime/host-catalog/runtime-client-target'
 import { useStructuredAgentSession } from '../native-chat/session/structured/use-structured-agent-session'
 import {
-  botGroupOperationAdmitted,
   createBotGroupJournalIndexer,
   type indexBotGroupJournal,
   type BotGroupTurn
 } from '../../../../shared/bots/bot-group'
+import { botGroupTurnsOlderThanPage } from '../../../../shared/bots/bot-group-journal-paging'
 export type BotGroupSession = ReturnType<typeof useStructuredAgentSession> & {
   groupTurnItems: ReturnType<typeof indexBotGroupJournal>
 }
@@ -18,7 +18,10 @@ export const BotGroupSessionReader = memo(function BotGroupSessionReader({
 }: {
   /** The group's host, which runs its members' sessions. */
   target: RuntimeClientTarget
-  turn: Pick<BotGroupTurn, 'sessionId' | 'agent'> & { operationIds: readonly string[] }
+  turn: Pick<BotGroupTurn, 'sessionId' | 'agent'> & {
+    operationIds: readonly string[]
+    endedIds: ReadonlySet<string>
+  }
   visible: boolean
   report: (sessionId: string, session: BotGroupSession | null) => void
 }): null {
@@ -44,14 +47,11 @@ export const BotGroupSessionReader = memo(function BotGroupSessionReader({
       readCurrent &&
       hasOlder &&
       !loadingOlder &&
-      // Page only for a turn the session admitted; queued or refused ones have no older rows to find.
-      turn.operationIds.some(
-        (id) =>
-          groupTurnItems(id).length === 0 &&
-          botGroupOperationAdmitted(
-            { items: controller.journalItems, submissions: controller.submissions },
-            id
-          )
+      botGroupTurnsOlderThanPage(
+        { items: controller.journalItems, submissions: controller.submissions },
+        turn.operationIds,
+        turn.endedIds,
+        groupTurnItems
       )
     ) {
       void loadOlder()
@@ -62,6 +62,7 @@ export const BotGroupSessionReader = memo(function BotGroupSessionReader({
     loadingOlder,
     loadOlder,
     turn.operationIds,
+    turn.endedIds,
     groupTurnItems,
     controller.journalItems,
     controller.submissions

@@ -298,10 +298,13 @@ export function readBotGroup(
   settleDeadGroupMailTurns(groups, messages)
   return {
     group,
-    // Saved replies feed later posts' context only; the room renders each turn from its chat.
+    // Saved replies feed later posts' context; the room renders each turn from its chat, paging
+    // back for an ended one whose rows are older than the loaded page.
     messages: presentPageAnswers(messages).map((message) => ({
       ...message,
-      turns: message.turns.map(({ reply: _reply, ...turn }) => turn)
+      turns: message.turns.map(({ reply, ...turn }) =>
+        reply === undefined ? turn : { ...turn, ended: true as const }
+      )
     })),
     hasEarlier:
       messages.length > 0 &&

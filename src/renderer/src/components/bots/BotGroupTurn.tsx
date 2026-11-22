@@ -215,7 +215,8 @@ export const BotGroupTurn = memo(function BotGroupTurn({
     onRevealDiff: () => {},
     actionablePromptIds: session?.hostWork?.actionablePromptIds
   }
-  const waiting = !lifecycle && !rejection
+  // An ended turn's rows may still be loading from further back in its chat.
+  const waiting = !lifecycle && !rejection && !turn.ended
   const membershipEnded = turn.revoked && lifecycle?.state !== 'completed'
   const pendingLabel = membershipEnded
     ? t('bots.groups.memberRemoved', 'Member removed')
@@ -229,7 +230,9 @@ export const BotGroupTurn = memo(function BotGroupTurn({
             : 'Starting…'
       : rejection
         ? 'Not started'
-        : undefined
+        : lifecycle
+          ? undefined
+          : 'Ended'
   return (
     <BotGroupTranscriptOwner
       context={files}

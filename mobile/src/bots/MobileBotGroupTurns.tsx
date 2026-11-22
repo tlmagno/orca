@@ -10,12 +10,12 @@ import { MobileNativeChatRowOverlaysHost } from '../session/native-chat/transcri
 import { Reply, Square } from 'lucide-react-native'
 import { foldMobileNativeChatMessages } from '../session/native-chat/transcript/projection/mobile-native-chat-render-data'
 import {
-  botGroupOperationAdmitted,
   createBotGroupJournalIndexer,
   type indexBotGroupJournal,
   type BotGroupTurn,
   withBotGroupTurnAnswer
 } from '../../../src/shared/bots/bot-group'
+import { botGroupTurnsOlderThanPage } from '../../../src/shared/bots/bot-group-journal-paging'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
 import { colors } from '../theme/mobile-theme'
 import { groupStyles as styles } from './mobile-bot-group-styles'
@@ -43,7 +43,10 @@ export const MobileBotGroupReader = memo(function Reader({
   visible,
   connected
 }: {
-  turn: Pick<BotGroupTurn, 'sessionId' | 'agent'> & { operationIds: readonly string[] }
+  turn: Pick<BotGroupTurn, 'sessionId' | 'agent'> & {
+    operationIds: readonly string[]
+    endedIds: ReadonlySet<string>
+  }
   client: RpcClient
   support: StructuredAgentSessionHostSupport
   visible: boolean
@@ -74,10 +77,7 @@ export const MobileBotGroupReader = memo(function Reader({
       status === 'ready' &&
       hasMore &&
       !loadingEarlier &&
-      // Page only for a turn the session admitted; queued or refused ones have no older rows to find.
-      turn.operationIds.some(
-        (id) => groupTurnItems(id).length === 0 && botGroupOperationAdmitted(session.journal, id)
-      )
+      botGroupTurnsOlderThanPage(session.journal, turn.operationIds, turn.endedIds, groupTurnItems)
     ) {
       void loadEarlier()
     }
@@ -89,6 +89,7 @@ export const MobileBotGroupReader = memo(function Reader({
     loadingEarlier,
     loadEarlier,
     turn.operationIds,
+    turn.endedIds,
     groupTurnItems,
     session.journal
   ])
@@ -200,7 +201,7 @@ export function MobileBotGroupTurn({
                     onToggleExpanded={clock ? () => setExpanded(!expanded) : undefined}
                   />
                 </View>
-                {!turn.revoked && !turn.error && (working || !clock) ? (
+                {!turn.revoked && !turn.error && (working || (!clock && !turn.ended)) ? (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('bots.groups.stopValue', 'Stop {{value0}}', {
@@ -223,7 +224,7 @@ export function MobileBotGroupTurn({
               </View>
               {turn.error ? (
                 <Text style={styles.notice}>{turn.error}</Text>
-              ) : !clock && !queued ? (
+              ) : !clock && !queued && !turn.ended ? (
                 <Text style={styles.notice}>
                   {t('bots.groups.waitingForTheNativeSession', 'Waiting for the native session…')}
                 </Text>

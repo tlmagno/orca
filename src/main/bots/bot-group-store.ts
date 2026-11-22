@@ -332,7 +332,7 @@ export class BotGroupStore {
   }
 
   update({ sequence: _sequence, ...message }: BotGroupMessage): void {
-    const turns = message.turns.map(({ workerDispatchIds: _workers, ...turn }) => turn)
+    const turns = message.turns.map(({ workerDispatchIds: _w, ended: _e, ...turn }) => turn)
     this.db
       .prepare('UPDATE bot_group_messages SET record = ? WHERE id = ? AND group_id = ?')
       .run(JSON.stringify({ ...message, turns }), message.id, message.groupId)

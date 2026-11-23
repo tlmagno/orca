@@ -134,9 +134,9 @@ export function MobileBotGroupTurn({
     () =>
       withBotGroupTurnAnswer(
         transcript.messages(items).filter((message) => message.role !== 'user'),
-        { operationId: turn.operationId, answer: turn.answer }
+        { operationId: turn.operationId, answer: turn.answer, ended: turn.ended }
       ),
-    [items, turn.operationId, turn.answer]
+    [items, turn.operationId, turn.answer, turn.ended]
   )
   const fullContent = useMobileNativeChatMessageDetail(rawMessages, source)
   const messages = useMemo(

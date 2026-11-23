@@ -104,8 +104,8 @@ const BotGroupTurnSchema = z.object({
    *  the turn runs, and on turns saved before replies were. */
   reply: z.string().nullable().optional(),
   /** On a room page only, for a saved reply: the turn ended, so its chat holds its rows however
-   *  far back they are. */
-  ended: z.literal(true).optional(),
+   *  far back they are; `reply` is that reply's tail, drawn until they load. */
+  ended: z.object({ reply: z.string().optional() }).optional(),
   /** Its answer to another member's request: sent as mail, so its own chat shows only the call. */
   answer: z.string().optional(),
   /** The members its reply named, saved as their hand-offs were reserved: a replay wakes none. */
@@ -264,11 +264,16 @@ export function botGroupTurnReplyText(
 }
 
 /** A turn's rows as the room draws them on desktop and mobile: its answer to a member's request
- *  closes them, unless its own words already said it. */
+ *  closes them, unless its own words already said it. An ended turn whose rows have not loaded
+ *  shows its saved reply instead. */
 export function withBotGroupTurnAnswer(
   messages: NativeChatMessage[],
-  turn: Pick<BotGroupTurn, 'operationId' | 'answer'>
+  turn: Pick<BotGroupTurn, 'operationId' | 'answer' | 'ended'>
 ): NativeChatMessage[] {
+  const answer =
+    messages.length === 0 && turn.ended
+      ? (botGroupTurnReplyText(turn.ended.reply, turn.answer) ?? undefined)
+      : turn.answer
   const words = messages
     .flatMap((message) =>
       message.role === 'assistant'
@@ -276,13 +281,13 @@ export function withBotGroupTurnAnswer(
         : []
     )
     .join('\n')
-  return turn.answer?.trim() && !holdsAnswer(words, turn.answer)
+  return answer?.trim() && !holdsAnswer(words, answer)
     ? [
         ...messages,
         {
           id: `${turn.operationId}:answer`,
           role: 'assistant',
-          blocks: [{ type: 'text', text: turn.answer }],
+          blocks: [{ type: 'text', text: answer }],
           timestamp: null,
           source: 'transcript'
         }

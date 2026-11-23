@@ -118,9 +118,9 @@ export const BotGroupTurn = memo(function BotGroupTurn({
     () =>
       withBotGroupTurnAnswer(
         projected.conversation.filter((message) => message.role !== 'user'),
-        { operationId: turn.operationId, answer: turn.answer }
+        { operationId: turn.operationId, answer: turn.answer, ended: turn.ended }
       ),
-    [projected.conversation, turn.operationId, turn.answer]
+    [projected.conversation, turn.operationId, turn.answer, turn.ended]
   )
   useBotGroupTranscriptRows(roomRows, turn.operationId, messages)
   // Each room turn opens its subagents in place, as a chat pane does, keyed to this turn.

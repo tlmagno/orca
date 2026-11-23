@@ -283,6 +283,13 @@ export function resumePendingGroupDeliveries(groups: BotGroupRuntime): void {
   }
 }
 
+const ROOM_PAGE_REPLY_CHARS = 4_000
+
+/** A saved reply's tail, enough to read until the turn's own rows load. */
+function roomPageReply(reply: string): string {
+  return reply.length > ROOM_PAGE_REPLY_CHARS ? `…${reply.slice(-ROOM_PAGE_REPLY_CHARS)}` : reply
+}
+
 /** One room's latest page; its `group` carries that room's member sessions. */
 export function readBotGroup(
   groups: BotGroupRuntime,
@@ -303,7 +310,9 @@ export function readBotGroup(
     messages: presentPageAnswers(messages).map((message) => ({
       ...message,
       turns: message.turns.map(({ reply, ...turn }) =>
-        reply === undefined ? turn : { ...turn, ended: true as const }
+        reply === undefined
+          ? turn
+          : { ...turn, ended: reply ? { reply: roomPageReply(reply) } : {} }
       )
     })),
     hasEarlier:

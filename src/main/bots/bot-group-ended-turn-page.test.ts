@@ -1,14 +1,14 @@
 import { afterEach, expect, it } from 'vitest'
 import type { AgentJournalRenderItem } from '../../shared/agent-session/journal/agent-session-journal-types'
-import type { BotGroupTurn } from '../../shared/bots/bot-group'
+import { type BotGroupTurn, withBotGroupTurnAnswer } from '../../shared/bots/bot-group'
 import { botGroupTurnsOlderThanPage } from '../../shared/bots/bot-group-journal-paging'
 import { OrchestrationDb } from '../runtime/orchestration/db/orchestration-db'
 import { readBotGroup } from './bot-group-delivery'
 import type { BotGroupRuntime } from './bot-group-runtime'
 import { BotGroupStore } from './bot-group-store'
 
-// A long member turn pushes its own send off the member chat's loaded page; the room must still
-// page back for it once it ended, or it reads "Starting…" with its reply hidden (#46084).
+// A long member turn pushes its own send off the member chat's loaded page; once it ended the room
+// must show its reply at once and page back for its rows, not read "Starting…" (#46084).
 
 const databases: OrchestrationDb[] = []
 afterEach(() => {
@@ -55,10 +55,16 @@ it('pages back for an ended turn whose send is older than the loaded page', () =
 
   const [message] = readBotGroup(groups, 'group-1').messages
   expect(message.turns.map((t) => [t.operationId, t.ended, 'reply' in t])).toEqual([
-    ['finished', true, false],
-    ['quiet', true, false],
+    ['finished', { reply: 'Audit done.' }, false],
+    ['quiet', {}, false],
     ['running', undefined, false]
   ])
+  // With none of its rows loaded, the ended turn already shows its reply.
+  const [finished, , running] = message.turns
+  expect(withBotGroupTurnAnswer([], finished).flatMap((m) => m.blocks)).toEqual([
+    { type: 'text', text: 'Audit done.' }
+  ])
+  expect(withBotGroupTurnAnswer([], running)).toEqual([])
   // A page marker is never saved back onto the post.
   store.update({ ...store.message('message-1')!, turns: message.turns })
   expect(store.message('message-1')!.turns.some((t) => 'ended' in t)).toBe(false)
